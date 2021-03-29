@@ -39,8 +39,6 @@ namespace Krypto
 
             level = 0;
             direction = false;
-            int col = 0;
-            bool started = false;
 
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < input.Length; i++)
@@ -59,70 +57,8 @@ namespace Krypto
                     level--;
             }
 
-            //StringBuilder sb = new StringBuilder();
-            //foreach (var list in a)
-            //{
-            //    int size = list.Count;
-            //    int len = input.Length;
-            //    list.RemoveRange(0,list.Count);
-            //    sb.Append(input.Substring(0, size));
-            //    input = input.Remove(0, size);
-            //}
-            //return sb.ToString();
-
             return sb.ToString();
         }
-
-        //public string EncodeRail(string input, int key)
-        //{
-        //    List<char>[] a = new List<char>[key];
-
-        //    for (int i = 0; i < key; i++)
-        //    {
-        //        a[i] = new List<char>();
-        //    }
-
-        //    for (int i = 0; i < key; i++)
-        //    {
-        //        a[i].Add(input[i]);
-        //    }
-
-        //    StringBuilder sb = new StringBuilder();
-
-        //    int modulo = key + key - 2;
-
-        //    int level = 0;
-
-        //    int current_letter = 0;
-
-        //    for (int j = 0;  j < key; j++)
-        //    {
-        //        if (j == key - 1)
-        //        {
-        //            level = 0;
-        //        }
-        //        int add = modulo + current_letter - level;
-        //        while (add <= input.Length - 1)
-        //        {
-        //            if(add >= 0 && add <= input.Length - 1)
-        //                a[j].Add(input[add]);
-        //            add += modulo - level;
-        //        }
-        //        current_letter++;
-        //        level += 2;
-        //    }
-
-        //    foreach(var list in a)
-        //    {
-        //        foreach(char aa in list)
-        //        {
-        //            sb.Append(aa);
-        //        }
-
-        //    }
-
-        //    return sb.ToString();
-        //}
 
         public string EncodeRail(string input, int key)
         {
@@ -346,13 +282,14 @@ namespace Krypto
                 }
             }
             int column_to_take = 0;
+
             //0 9 6 10 2 7 5 3 8 1 4
             for (int i = 0, k = 0; i < columns; i++)
             {
                 KeyValuePair<char, int> temp = letter_order.Find(x => x.Value == i);
                 column_to_take = letter_order.LastIndexOf(temp);
                 for (int j = 0; j < rows; j++)
-                { // dodac if na #
+                {
                     if (matrix[j, column_to_take] == '#' && k <= input.Length - 1)
                     {
                         matrix[j, column_to_take] = input[k];
@@ -426,7 +363,6 @@ namespace Krypto
                     //0 9 6 10 2 7 5 3 8 1 4
                 }
             }
-            //CRYHOARPGPYT
             //CRYHOARPGPYT
             sb.Replace("\0", string.Empty);
             return sb.ToString();
@@ -612,11 +548,6 @@ namespace Krypto
                 }
 
                 result.Append(matrix[0, column]);
-                //while (matrix[row, column] != input[i])
-                //{
-                //    column++;
-                //}
-                //result.Append(matrix[0, column]);
             }
 
             return result.ToString();
