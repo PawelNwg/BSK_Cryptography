@@ -552,5 +552,211 @@ namespace Krypto
 
             return result.ToString();
         }
+
+        public string LFSR(string seed, string mask, int length)
+        {
+            // seed wartosc wejsciowa
+            // maska określa xorowanie
+            // length dlugosc wyjsciowego ciagu bitow
+
+            int rows = length + 1;
+            int columns = seed.Length;
+            char[,] matrix = new char[rows, columns];
+            char XOR_value;
+
+            for (int i = 0; i < columns; i++)
+            {
+                matrix[0, i] = seed[i]; // uzupełnienie pierwszego wiersza
+            }
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < columns; j++)
+                {
+                    if (i + 1 < rows)
+                    {
+                        //przepisanie wartosci z przesunieciem bitu
+                        //xorowanie zgodnie z wielomianem
+                        if (j == 0) // wielomian na Q1
+                        {
+                            StringBuilder row = new StringBuilder();
+                            // stworzenie wiersza do podania
+                            for (int z = 0; z < columns; z++)
+                            {
+                                row.Append(matrix[i, z]);
+                            }
+                            XOR_value = XOR(row.ToString(), mask);
+                            matrix[i + 1, 0] = XOR_value;
+                            continue;
+                        }
+
+                        matrix[i + 1, j] = matrix[i, j - 1];
+                    }
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            // odczyt wartosci z ostatniej kolumny
+            for (int i = 1; i < rows; i++)
+            {
+                sb.Append(matrix[i, 0]); // wybor kolum
+            }
+            return sb.ToString(); ;
+        }
+
+        public char XOR(string seed, string mask)
+        {
+            char[] seedArr = seed.ToCharArray();
+            char[] maskArr = mask.ToCharArray();
+            int XOR = 0;
+
+            for (int i = 0; i < seed.Length; i++)
+            {
+                if (maskArr[i] == '1' && seedArr[i] == '1')
+                    XOR++;
+            }
+
+            if (XOR % 2 == 0)
+                return '0'; // parzysta liczba jedynek
+            else
+                return '1'; // np liczba jedynek
+        }
+
+        public char XOR(string seed, string mask, string input)
+        {
+            char[] seedArr = seed.ToCharArray();
+            char[] maskArr = mask.ToCharArray();
+            char[] inputArr = input.ToCharArray();
+            int XOR = 0;
+
+            for (int i = 0; i < seed.Length; i++)
+            {
+                if (maskArr[i] == '1' && seedArr[i] == '1' && inputArr[i] == '1')
+                    XOR++;
+            }
+
+            if (XOR % 2 == 0)
+                return '0'; // parzysta liczba jedynek
+            else
+                return '1'; // np liczba jedynek
+        }
+
+        public char Single_XOR(char byte_1, char byte_2)
+        {
+            return byte_1 != byte_2 ? '1' : '0';
+        }
+
+        public string Synchronous_Stream_Cipher(string input, string seed, string mask) // czytanie wartosci bez seed, czyli od 1 indexu wiersza
+        {
+            StringBuilder sb = new StringBuilder();
+            string lsfr = LFSR(seed, mask, input.Length);
+            for (int i = 0; i < input.Length; i++)
+            {
+                sb.Append(Single_XOR(input[i], lsfr[i]));
+            }
+            return sb.ToString();
+        }
+
+        public string Ciphertext_Autokey_Encrypt(string input, string seed, string mask)
+        {
+            int rows = input.Length + 1;
+            int columns = seed.Length;
+            char[,] matrix = new char[rows, columns];
+            char XOR_value;
+
+            for (int i = 0; i < columns; i++)
+            {
+                matrix[0, i] = seed[i]; // uzupełnienie pierwszego wiersza
+            }
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < columns; j++)
+                {
+                    if (i + 1 < rows)
+                    {
+                        //przepisanie wartosci z przesunieciem bitu
+                        //xorowanie zgodnie z wielomianem
+                        if (j == 0) // wielomian na Q1
+                        {
+                            StringBuilder row = new StringBuilder();
+                            // stworzenie wiersza do podania
+                            for (int z = 0; z < columns; z++)
+                            {
+                                row.Append(matrix[i, z]);
+                            }
+                            XOR_value = XOR(row.ToString(), mask);
+                            XOR_value = Single_XOR(XOR_value, input[i]);
+                            matrix[i + 1, 0] = XOR_value;
+                            continue;
+                        }
+
+                        matrix[i + 1, j] = matrix[i, j - 1];
+                    }
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            // odczyt wartosci z ostatniej kolumny
+            for (int i = 1; i < rows; i++)
+            {
+                sb.Append(matrix[i, 0]); // wybor kolum
+            }
+            return sb.ToString();
+        }
+
+        public string Ciphertext_Autokey_Decrypt(string input, string seed, string mask) // branie wartosci od 0 
+        {
+            int rows = input.Length;
+            int columns = seed.Length;
+            char[,] matrix = new char[rows, columns];
+
+            for (int i = 0; i < columns; i++)
+            {
+                matrix[0, i] = seed[i]; // uzupełnienie pierwszego wiersza
+            }
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < columns; j++)
+                {
+                    if (i + 1 < rows)
+                    {
+                        //przepisanie wartosci z przesunieciem bitu
+                        //xorowanie zgodnie z wielomianem
+                        if (j == 0) // wielomian na Q1
+                        {
+                            StringBuilder row = new StringBuilder();
+                            // stworzenie wiersza do podania
+                            for (int z = 0; z < columns; z++)
+                            {
+                                row.Append(matrix[i, z]);
+                            }
+                            // kolejna wartosc w kolumnie Q1 to bity ze słowa wejściowego
+                            matrix[i + 1, 0] = input[i];
+                            continue;
+                        }
+
+                        matrix[i + 1, j] = matrix[i, j - 1];
+                    }
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            StringBuilder output = new StringBuilder();
+            char XOR_value;
+            for (int i = 0; i < rows; i++) // xor z maska
+            {
+                for (int z = 0; z < columns; z++)
+                {
+                    sb.Append(matrix[i, z]);
+                }
+                XOR_value = XOR(sb.ToString(), mask); // wybor kolumn
+                output.Append(Single_XOR(XOR_value, input[i]));
+                sb.Clear();
+            }
+
+            return output.ToString();
+        }
     }
 }
