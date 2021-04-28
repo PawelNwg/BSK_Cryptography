@@ -776,37 +776,55 @@ namespace Krypto
         public string DES(string input, string key)
         {
             string[] subkeys = prepareDesKey(key); // KEY
+            string[] RL = new string[16];
+            string[] Rarr = new string[16];
+            string[] Larr = new string[16];
 
             int numberOfblocks = input.Length % 64 == 0 ? (input.Length / 64) : (input.Length / 64) + 1; // jezeli uda sie podzielic na bloki po 64
+            string block64 = input.Substring(0 * 64, 64); // take first 64 bits from input
+            block64 = initialPermatuation(block64); // initial permutation
+            string L = block64.Substring(0, 32); // first 32 bits of 64 bits block
+            string R = block64.Substring(32, 32); // second 32 bits of 64 bits block
+            string initialRvalue = R;
 
-            List<string> blocks = new List<string>();
-            for (int i = 0; i < numberOfblocks; i++) // cut input into 64 blocks
+            for (int i = 0; i < 16; i++)
             {
-                string block = input.Substring(0, 64);
-                input = input.Remove(0, 64);
-                blocks.Add(block);
-            }
-            // initial permutation
-            string check = initialPermatuation(blocks[0]);
-            // break into 2
-            string keyL = key.Substring(0, 32);
-            keyL = permutedExpansion(keyL);
-            string keyP = key.Substring(32, 32);
-            keyP = permutedExpansion(keyP);
-            keyP = Multiple_XOR(keyP, subkeys[0]); // XOR with key
+                if (i != 0)
+                {
+                    R = Rarr[i - 1];
+                    L = Larr[i - 1];
+                    initialRvalue = R;
+                }
+                // nowa zmienna czy tymczasowa na trzymanie permutacji rozszerzajacej?
+                R = permutedExpansion(R); // expansion permutation from 32 to 48 bits
+                R = Multiple_XOR(R, subkeys[i]); // XOR with subkey[i]
 
-            StringBuilder dataFrom8x6Table = new StringBuilder();
-            for (int i = 0; i < 8; i++) // break Right key into 8 x 6 bits
-            {
-                string subBlock = keyP.Substring(i * 6, 6);
-                dataFrom8x6Table.Append(readTableData(subBlock, 0));
+                StringBuilder dataFrom8x6Table = new StringBuilder();
+                for (int j = 0; j < 8; j++) // break Right key into 8 x 6 bits
+                {
+                    string subBlock = R.Substring(j * 6, 6); // make 8 x 6bits strings
+                    dataFrom8x6Table.Append(readTableData(subBlock, j)); // receive 32bits from 8 tables
+                }
+                string table8x6data = permutedSblock(dataFrom8x6Table.ToString()); 
+                // S block permutation of 32bits data
+                                                                                  
+                // left side XOR with table data 8x6
+                                                                                   
+                // right side equals XOR of left side and table data
+                                                                                   
+                // left side equals right side from the start
+
+                Rarr[i] = Multiple_XOR(L, table8x6data);
+                Larr[i] = initialRvalue;
+
             }
 
-            string table8x6data = permutedSblock(dataFrom8x6Table.ToString());
-            return "";
+            string final = Rarr[15] + Larr[15];
+            string pleaseBeCorrect = permutedReverse(final);
+            return pleaseBeCorrect;
         }
 
-        private string readTableData(string bitValue, int s)
+        public string readTableData(string bitValue, int s)
         {
             int row = Convert.ToInt32(bitValue[0].ToString() + bitValue[bitValue.Length - 1], 2); // 0 and 5th bit -> int row
             int column = Convert.ToInt32(bitValue.Substring(1, 4), 2); // 1 2 3 4 bits -> int column
@@ -862,7 +880,7 @@ namespace Krypto
             2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11}
             };
             // go back to binary
-            string result = Convert.ToString(dataTables[s, (16 - 1) * row + column + 1], 2);
+            string result = Convert.ToString(dataTables[s, 16 * row + column], 2);
             return result.Length == 4 ? result : completeSequence(result, 4);
         }
 
@@ -877,7 +895,7 @@ namespace Krypto
             return sb.ToString();
         }
 
-        private string[] prepareDesKey(string key)
+        public string[] prepareDesKey(string key)
         {
             key = permutedChoice_1(key); // initial permutation
             int[] ls = new int[] { 1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1 };
@@ -934,7 +952,7 @@ namespace Krypto
             return sb.ToString();
         }
 
-        private string initialPermatuation(string key)
+        public string initialPermatuation(string key)
         {
             int[] ip = new int[] {58,50,42,34,26,18,10,2,60,52,44,36,28,20,12,4,62,54,
                                   46,38,30,22,14,6,64,56,48,40,32,24,16,8,57,49,41,33,
@@ -949,7 +967,7 @@ namespace Krypto
             return sb.ToString();
         }
 
-        private string permutedExpansion(string key) // key permutation, length reduction
+        public string permutedExpansion(string key) // key permutation, length reduction
         {
             int[] ip = new int[] { 32,1,2,3,4,5,4,5,6,7,8,9,
                                    8,9,10,11,12,13,12,13,14,15,16,17,
@@ -964,9 +982,26 @@ namespace Krypto
             return sb.ToString();
         }
 
-        private string permutedSblock(string key) // key permutation, length reduction
+        public string permutedSblock(string key) // key permutation, length reduction
         {
-            int[] ip = new int[] { 16, 7, 20, 21, 29, 12, 28, 17, 1, 15, 23, 26, 5, 18, 31, 10, 2, 8, 24, 14, 32, 27, 3, 9, 19, 13, 30, 6, 22, 11, 4, 25 };
+            int[] ip = new int[] { 16, 7, 20, 21, 29, 12, 28, 17, 1, 15, 23,
+                                   26, 5, 18, 31, 10, 2, 8, 24, 14, 32, 27, 3,
+                                   9, 19, 13, 30, 6, 22, 11, 4, 25 };
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < ip.Length; i++)
+            {
+                sb.Append(key[ip[i] - 1]);
+            }
+            return sb.ToString();
+        }
+
+        private string permutedReverse(string key) // key permutation, length reduction
+        {
+            int[] ip = new int[] {40,8,48,16,56,24,64,32,39,7,47,15,55,23,63,31,
+                                  38,6,46,14,54,22,62,30,37,5,45,13,53,21,61,29,
+                                  36,4,44,12,52,20,60,28,35,3,43,11,51,19,59,27,
+                                  34,2,42,10,50,18,58,26,33,1,41,9,49,17,57,25};
 
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < ip.Length; i++)
