@@ -773,9 +773,12 @@ namespace Krypto
             return output.ToString();
         }
 
-        public string DES(string input, string key)
+        public string DES(string input, string key, bool endcodeOrDecode)
         {
             string[] subkeys = prepareDesKey(key); // KEY
+
+            if (!endcodeOrDecode) Array.Reverse(subkeys); // DECRYPT
+
             string[] RL = new string[16];
             string[] Rarr = new string[16];
             string[] Larr = new string[16];
@@ -805,18 +808,17 @@ namespace Krypto
                     string subBlock = R.Substring(j * 6, 6); // make 8 x 6bits strings
                     dataFrom8x6Table.Append(readTableData(subBlock, j)); // receive 32bits from 8 tables
                 }
-                string table8x6data = permutedSblock(dataFrom8x6Table.ToString()); 
+                string table8x6data = permutedSblock(dataFrom8x6Table.ToString());
                 // S block permutation of 32bits data
-                                                                                  
+
                 // left side XOR with table data 8x6
-                                                                                   
+
                 // right side equals XOR of left side and table data
-                                                                                   
+
                 // left side equals right side from the start
 
                 Rarr[i] = Multiple_XOR(L, table8x6data);
                 Larr[i] = initialRvalue;
-
             }
 
             string final = Rarr[15] + Larr[15];
